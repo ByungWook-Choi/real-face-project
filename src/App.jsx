@@ -1,35 +1,127 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState, useRef, useEffect } from 'react';
+import './App.css';
+
+const ProgressBar = () => (
+  <div className="progress-bar-container">
+    <div className="progress-bar"></div>
+    <p>분석 중...</p>
+  </div>
+);
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [image, setImage] = useState(null);
+  const [showCamera, setShowCamera] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setIsLoading(true);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setImage(event.target.result);
+        setShowCamera(false);
+        setIsLoading(false);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const startCamera = async () => {
+    setShowCamera(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (err) {
+      console.error("Error accessing camera: ", err);
+      setShowCamera(false);
+    }
+  };
+
+  const handleCapture = () => {
+    if (videoRef.current && canvasRef.current) {
+      setIsLoading(true);
+      const context = canvasRef.current.getContext('2d');
+      canvasRef.current.width = videoRef.current.videoWidth;
+      canvasRef.current.height = videoRef.current.videoHeight;
+      context.drawImage(videoRef.current, 0, 0);
+      const dataUrl = canvasRef.current.toDataURL('image/png');
+      setImage(dataUrl);
+      setShowCamera(false);
+      setIsLoading(false);
+      if (videoRef.current.srcObject) {
+        videoRef.current.srcObject.getTracks().forEach(track => track.stop());
+      }
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (videoRef.current && videoRef.current.srcObject) {
+        videoRef.current.srcObject.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, []);
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <div className="App">
+      <header className="App-header">
+        <h1>진짜 내 얼굴을 찾아보세요</h1>
+        <p>거울 속의 내 얼굴과 남이 보는 내 얼굴은 다릅니다.</p>
+      </header>
+      <main>
+        {isLoading && <ProgressBar />}
+        {!showCamera && !isLoading && (
+          <div className="controls">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              id="file-upload"
+              style={{ display: 'none' }}
+            />
+            <label htmlFor="file-upload" className="button">
+              사진 업로드
+            </label>
+            <button onClick={startCamera} className="button">
+              카메라로 촬영
+            </button>
+          </div>
+        )}
+        {showCamera && !isLoading && (
+          <div className="camera-container">
+            <video ref={videoRef} autoPlay style={{ width: '100%', maxWidth: '500px', transform: 'scaleX(-1)' }}></video>
+            <button onClick={handleCapture} className="button capture-button">
+              촬영하기
+            </button>
+            <canvas ref={canvasRef} style={{ display: 'none' }}></canvas>
+          </div>
+        )}
+        <div className="image-container">
+          {image && !isLoading && (
+            <>
+              <div className="image-wrapper">
+                <h2>원본 (남들이 보는 내 얼굴)</h2>
+                <img src={image} alt="Original" />
+              </div>
+              <div className="image-wrapper">
+                <h2>거울 속 내 얼굴</h2>
+                <img
+                  src={image}
+                  alt="Mirrored"
+                  style={{ transform: 'scaleX(-1)' }}
+                />
+              </div>
+            </>
+          )}
+        </div>
+      </main>
+    </div>
+  );
 }
 
-export default App
+export default App;
