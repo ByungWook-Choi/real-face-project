@@ -1,5 +1,6 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import './App.css';
+import { applyPincushionDistortion } from './utils/imageProcessing';
 
 const ProgressBar = () => (
   <div className="progress-bar-container">
@@ -9,21 +10,35 @@ const ProgressBar = () => (
 );
 
 function App() {
-  const [image, setImage] = useState(null);
+  const [image, setImageDataUrl] = useState(null);
+  const [pincushionImage, setPincushionImage] = useState(null);
   const [showCamera, setShowCamera] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
+  const processImage = useCallback(async (dataUrl) => {
+    setIsLoading(true);
+    setImageDataUrl(dataUrl);
+    try {
+      const distorted = await applyPincushionDistortion(dataUrl, 0.2); // Adjust strength as needed
+      setPincushionImage(distorted);
+    } catch (error) {
+      console.error("Error applying pincushion distortion:", error);
+      setPincushionImage(null);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setIsLoading(true);
       const reader = new FileReader();
       reader.onload = (event) => {
-        setImage(event.target.result);
+        processImage(event.target.result);
         setShowCamera(false);
-        setIsLoading(false);
       };
       reader.readAsDataURL(file);
     }
@@ -44,15 +59,13 @@ function App() {
 
   const handleCapture = () => {
     if (videoRef.current && canvasRef.current) {
-      setIsLoading(true);
       const context = canvasRef.current.getContext('2d');
       canvasRef.current.width = videoRef.current.videoWidth;
       canvasRef.current.height = videoRef.current.videoHeight;
       context.drawImage(videoRef.current, 0, 0);
       const dataUrl = canvasRef.current.toDataURL('image/png');
-      setImage(dataUrl);
+      processImage(dataUrl);
       setShowCamera(false);
-      setIsLoading(false);
       if (videoRef.current.srcObject) {
         videoRef.current.srcObject.getTracks().forEach(track => track.stop());
       }
@@ -106,7 +119,11 @@ function App() {
             <>
               <div className="image-wrapper">
                 <h2>원본 (남들이 보는 내 얼굴)</h2>
-                <img src={image} alt="Original" />
+                {pincushionImage ? (
+                  <img src={pincushionImage} alt="Pincushion Distorted" />
+                ) : (
+                  <img src={image} alt="Original" />
+                )}
               </div>
               <div className="image-wrapper">
                 <h2>거울 속 내 얼굴</h2>
