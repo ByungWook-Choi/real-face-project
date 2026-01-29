@@ -111,3 +111,43 @@
   font-size: 1rem;
   color: #666;
 }
+
+/* Dark Mode Styles */
+body.dark-mode {
+  background-color: #282c34;
+  color: #e0e0e0;
+}
+
+.App.dark-mode {
+  background-color: #282c34;
+}
+
+.App.dark-mode .App-header h1 {
+  color: #e0e0e0;
+}
+
+.App.dark-mode .App-header p {
+  color: #bbbbbb;
+}
+
+.App.dark-mode .button {
+  background-color: #61dafb;
+  color: #282c34;
+}
+
+.App.dark-mode .button:hover {
+  background-color: #21a1f1;
+}
+
+.App.dark-mode .image-wrapper {
+  background-color: #3a3f4a;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.App.dark-mode .image-wrapper h2 {
+  color: #e0e0e0;
+}
+
+.App.dark-mode .progress-bar-container p {
+  color: #bbbbbb;
+}

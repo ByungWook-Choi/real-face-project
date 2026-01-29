@@ -14,8 +14,17 @@ function App() {
   const [pincushionImage, setPincushionImage] = useState(null);
   const [showCamera, setShowCamera] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const savedMode = localStorage.getItem('darkMode');
+    return savedMode ? JSON.parse(savedMode) : false;
+  });
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+
+  useEffect(() => {
+    document.body.classList.toggle('dark-mode', isDarkMode);
+    localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
+  }, [isDarkMode]);
 
   const processImage = useCallback(async (dataUrl) => {
     setIsLoading(true);
@@ -81,10 +90,13 @@ function App() {
   }, []);
 
   return (
-    <div className="App">
+    <div className={`App ${isDarkMode ? 'dark-mode' : ''}`}>
       <header className="App-header">
         <h1>진짜 내 얼굴을 찾아보세요</h1>
         <p>거울 속의 내 얼굴과 남이 보는 내 얼굴은 다릅니다.</p>
+        <button onClick={() => setIsDarkMode(!isDarkMode)} className="button dark-mode-toggle">
+          {isDarkMode ? '라이트 모드' : '다크 모드'}
+        </button>
       </header>
       <main>
         {isLoading && <ProgressBar />}
